@@ -2,9 +2,10 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegisterModelSerializer,LoginModelSerializer
+from .serializers import RegisterModelSerializer,LoginModelSerializer,ProfileModelSerializer
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
 
 
 
@@ -41,3 +42,9 @@ class LoginModelView(APIView):
             token=get_tokens_for_user(user)
             return Response({'token':token,'msg':'login successfully'},status=status.HTTP_200_OK)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+class ProfileModelView(APIView):
+    permission_classes=[IsAuthenticated]
+    def get(self,request,format=None):
+        serializer=ProfileModelSerializer(request.user)
+        return Response(serializer.data,status=status.HTTP_202_ACCEPTED)
