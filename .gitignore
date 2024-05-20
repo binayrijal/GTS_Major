@@ -3,6 +3,7 @@
 # Python virtual environment
 venv/
 env/
+/env
 
 # Django development settings
 *.pyc
