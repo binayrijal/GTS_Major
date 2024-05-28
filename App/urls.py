@@ -1,6 +1,7 @@
 from django.urls import path,include
 from . import views
 
+
 urlpatterns = [
     path('register_user/',views.RegisterModelView.as_view(),name='register_user'),
     path('login_user/',views.LoginModelView.as_view(),name='login_user'),
@@ -10,4 +11,7 @@ urlpatterns = [
     path('password-reset/<uid>/<token>/',views.DoPasswordResetView.as_view(),name='password-reset'),
     path('schedule/', views.EventViewSet.as_view({'get': 'list', 'post': 'create'}), name='schedule'),
     path('schedule/<int:pk>/', views.EventViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='schedule'),
+    path('generate-pdf/',views.GeneratePDFAPIView.as_view(), name='generate_pdf'),
+    path('trashdata/', views.TrashDataView.as_view(), name='trash-data'),
+    path('update-location/', views.update_location, name='update_location'),
 ]

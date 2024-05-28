@@ -22,3 +22,6 @@ env/
 
 # Ignore virtual environment
 myenv_3.11.3/
+
+/firebase_credentials.json
+firebase_credentials/

@@ -5,7 +5,7 @@ from django.utils.http import urlsafe_base64_encode,urlsafe_base64_decode
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.html import escape
 from .utils import Util
-from .models import Event
+from .models import Event,Trashdata
 
 
 User=get_user_model()
@@ -98,7 +98,7 @@ class SendMailPasswordResetSerializer(serializers.Serializer):
             print('UID',uid)
             token=PasswordResetTokenGenerator().make_token(user)
             print('Password Reset token',token)
-            link='http://localhost:8080/password-reset/'+uid+'/'+token
+            link='http://localhost:3000/password-reset/'+uid+'/'+token
             print('Reset password Send Mail  Link',link)
             link = escape(link)
             body = f'Click the following link to reset your password: {link}'
@@ -151,3 +151,30 @@ class EventSerializer(serializers.ModelSerializer):
         model = Event
         fields = ['id', 'title', 'description', 'start_time', 'end_time']       
            
+
+class TrashDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Trashdata
+        fields = ['location', 'trash']
+        
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if representation['trash'] is not None:
+            representation['trash'] = f"{representation['trash']}%"
+        return representation
+
+
+    
+class LocationSerializer(serializers.Serializer):
+    lati = serializers.FloatField()
+    longi = serializers.FloatField()
+
+    def validate_lati(self, value):
+        if not -90 <= value <= 90:
+            raise serializers.ValidationError("Latitude must be between -90 and 90")
+        return value
+
+    def validate_longi(self, value):
+        if not -180 <= value <= 180:
+            raise serializers.ValidationError("Longitude must be between -180 and 180")
+        return value

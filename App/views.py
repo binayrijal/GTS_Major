@@ -2,14 +2,34 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegisterModelSerializer,LoginModelSerializer,ProfileModelSerializer,PasswordChangeSerializer,SendMailPasswordResetSerializer,DoPasswordResetSerializer,EventSerializer
+from .serializers import RegisterModelSerializer,LoginModelSerializer,ProfileModelSerializer,PasswordChangeSerializer,SendMailPasswordResetSerializer,DoPasswordResetSerializer,EventSerializer,TrashDataSerializer,LocationSerializer
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from .renderer import UserRenderer
-from .models import Event
+from .models import Event,Trashdata,Notification
 from rest_framework import viewsets, permissions
 from rest_framework.permissions import IsAdminUser, SAFE_METHODS
+from django.http import HttpResponse
+from django.contrib.admin.views.decorators import staff_member_required
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table
+from io import BytesIO
+from .firebase_config import initialize_firebase
+from rest_framework.decorators import api_view,permission_classes
+from rest_framework.response import Response
+from django.core.mail import send_mail
+from django.utils import timezone
+from geopy.distance import geodesic
+from django.contrib.auth import get_user_model
+from django.conf import settings
+
+User=get_user_model()
+
+
+
+
 
 
 
@@ -85,27 +105,6 @@ class DoPasswordResetView(APIView):
             return Response({'msg':'password reset successfully'})
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
-    
-# class IsAdminOrReadOnly(permissions.BasePermission):
-#     """
-#     Custom permission to only allow admins to edit or delete objects.
-#     """
-
-#     def has_permission(self, request, view):
-#         # Allow read-only permissions to authenticated users
-#         if request.user.is_authenticated:
-#             return request.method in SAFE_METHODS
-#         return False
-    
-#     def has_object_permission(self, request, view, obj):
-#         # Allow write permissions only to admin users
-#         return request.user.is_staff
-    
-
-# class EventViewSet(viewsets.ModelViewSet):
-#     queryset = Event.objects.all()
-#     serializer_class = EventSerializer
-#     permission_classes = [IsAdminOrReadOnly]
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     """
@@ -138,3 +137,119 @@ class EventViewSet(viewsets.ModelViewSet):
             # For all other actions, use the IsAdminOrReadOnly permission
             permission_classes = [IsAdminOrReadOnly]
         return [permission() for permission in permission_classes]
+    
+
+class GeneratePDFAPIView(APIView):
+    
+    def get(self, request):
+        # Fetch data for the schedule
+        events = Event.objects.all()
+        
+        # Serialize the data
+        serializer = EventSerializer(events, many=True)
+        serialized_data = serializer.data
+
+        # Create a buffer to hold the PDF content
+        buffer = BytesIO()
+
+        # Create a PDF document
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        elements = []
+
+        # Create a table to display schedule data
+        data = [['ID', 'Title', 'Description', 'Start Time', 'End Time']]
+        for event in serialized_data:
+            data.append([
+                str(event['id']),
+                event['title'],
+                event['description'],
+                str(event['start_time']),
+                str(event['end_time'])
+            ])
+
+        # Create the table and style
+        table = Table(data)
+        table.setStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.gray),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ])
+        elements.append(table)
+
+        # Build the PDF document
+        doc.build(elements)
+
+        # Close the buffer and get the PDF content
+        pdf = buffer.getvalue()
+        buffer.close()
+
+        # Create an HTTP response with PDF content
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="schedule_report.pdf"'
+        return response
+    
+
+def firebaseData(request):
+    # Create a Firebase Realtime Database reference
+    database = initialize_firebase() 
+    location=database.child('TrashData').child('location').get().val()
+    trash=database.child('TrashData').child('trash').get().val()
+    
+    trash_data = Trashdata(location=location, trash=trash)
+    trash_data.save()
+
+    # Serialize the saved data
+    serializer = TrashDataSerializer(trash_data)
+    
+    return Response(serializer.data)
+
+class TrashDataView(APIView):
+    def get(self, request, *args, **kwargs):
+        # Fetch the latest TrashData entry
+        firebaseData(request)
+        trash_data = Trashdata.objects.all()
+        
+        if trash_data is not None:
+            # Serialize the data
+            serializer = TrashDataSerializer(trash_data,many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": "No data found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_location(request):
+    if request.data is None:
+        return Response({'error': 'Request data is missing'}, status=400)
+    serializer = LocationSerializer(data=request.data)
+    if serializer.is_valid():
+        lati = serializer.validated_data['lati']
+        longi = serializer.validated_data['longi']
+
+        notified_users = []
+        for user in User.objects.exclude(latitude__isnull=True, longitude__isnull=True):
+            user_location = (user.latitude, user.longitude)
+            truck_location = (lati, longi)
+            dis=geodesic(truck_location, user_location).km
+            print(dis,user.email)
+            if dis <= 1:
+                if not Notification.objects.filter(user=user, sent_at__date=timezone.now().date()).exists():
+                    send_mail(
+                        'Truck Near You',
+                        f'The truck is currently at latitude: {lati}, longitude: {longi}.',
+                        settings.EMAIL_HOST_USER,
+                        [user.email],
+                        fail_silently=False,
+                    )
+                    Notification.objects.create(user=user, lati=user.latitude, longi=user.longitude)
+                    notified_users.append(user.email)
+
+        return Response({'status': 'success', 'notified_users': notified_users})
+    else:
+        return Response(serializer.errors, status=400) 
+    

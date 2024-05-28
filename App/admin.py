@@ -2,7 +2,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin 
 from django.contrib.auth.forms import UserChangeForm, UserCreationForm
-from .models import User,Event
+from .models import User,Event,Trashdata,Notification
 from django import forms
 
 
@@ -65,6 +65,16 @@ admin.site.register(User, UserModelAdmin)
 # unregister the Group model from admin.
 #admin.site.unregister(Group)
 
+
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
     list_display = ('title', 'start_time', 'end_time')
+    
+@admin.register(Trashdata)
+class TrashAdmin(admin.ModelAdmin):
+    list_display=('id','location','trash')
+    
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'sent_at', 'lati', 'longi')
+    

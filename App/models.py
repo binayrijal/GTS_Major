@@ -98,3 +98,16 @@ class Event(models.Model):
 
     def __str__(self):
         return self.title
+    
+
+class Trashdata(models.Model):
+    location=models.CharField(max_length=150)
+    trash=models.IntegerField(default=0)
+    
+    
+class Notification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    sent_at = models.DateTimeField(auto_now_add=True)
+    lati = models.FloatField()
+    longi = models.FloatField()
+    
