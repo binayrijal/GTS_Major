@@ -72,7 +72,7 @@ class EventAdmin(admin.ModelAdmin):
     
 @admin.register(Trashdata)
 class TrashAdmin(admin.ModelAdmin):
-    list_display=('id','location','trash')
+    list_display=('id','location','trash','timestamp')
     
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):

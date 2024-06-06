@@ -1,3 +1,8 @@
+import io
+import matplotlib
+matplotlib.use('agg')  # Set the backend to 'agg' before importing pyplot
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -24,6 +29,9 @@ from django.utils import timezone
 from geopy.distance import geodesic
 from django.contrib.auth import get_user_model
 from django.conf import settings
+import json
+from matplotlib.ticker import MaxNLocator
+from matplotlib.dates import DateFormatter
 
 User=get_user_model()
 
@@ -207,18 +215,85 @@ def firebaseData(request):
     return Response(serializer.data)
 
 class TrashDataView(APIView):
+    def post(self, request, *args, **kwargs):
+        try:
+            # Ensure the request data is a dictionary
+            if isinstance(request.data, bytes):
+                data = json.loads(request.data.decode('utf-8'))
+            else:
+                data = request.data
+            
+            # Deserialize the data
+            serializer = TrashDataSerializer(data=data)
+            
+            # Validate and save the data
+            if serializer.is_valid():
+                serializer.save()
+                return Response(status=status.HTTP_201_CREATED)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            # Log the exception or print it
+            print(f"Exception occurred: {e}")
+            return Response({"error": "Something went wrong"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
+#generate graph for trash data
+class TrashDataGraphView(APIView):
     def get(self, request, *args, **kwargs):
-        # Fetch the latest TrashData entry
-        firebaseData(request)
-        trash_data = Trashdata.objects.all()
-        
-        if trash_data is not None:
+        # try:
+        #     # Retrieve all trash data from the database
+        #     trash_data = Trashdata.objects.all().order_by('timestamp')
+        #     if not trash_data:
+        #         return Response({"error": "No data found"}, status=status.HTTP_404_NOT_FOUND)
+
+        #     # Serialize the data
+        #     serializer = TrashDataSerializer(trash_data, many=True)
+        #     data = serializer.data
+
+        #     # Extract timestamps and values
+        #     timestamps = [item['timestamp'] for item in data]
+        #     values = [item['trash'] for item in data]
+
+        #     # Generate the graph
+        #     fig, ax = plt.subplots()
+        #     ax.plot(timestamps, values, label='Trash Data')
+        #     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        #     plt.xlabel('Time')
+        #     plt.ylabel('Trash Data')
+        #     plt.title('Trash Data Over Time')
+
+        #     # Highlight peaks
+        #     max_value = max(values)
+        #     peak_indices = [i for i, value in enumerate(values) if value == max_value]
+        #     for idx in peak_indices:
+        #         plt.plot(timestamps[idx], values[idx], 'ro')
+
+        #     # Format the x-axis to show date-time
+        #     ax.xaxis.set_major_formatter(DateFormatter('%m-%d'))
+        #     plt.gcf().autofmt_xdate()
+
+        #     # Save the plot to a BytesIO object
+        #     buf = io.BytesIO()
+        #     plt.savefig(buf, format='png')
+        #     plt.close(fig)
+        #     buf.seek(0)
+
+        #     # Return the graph as a response
+        #     return HttpResponse(buf, content_type='image/png')
+        # except Exception as e:
+        #     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        try:
+            # Retrieve all trash data from the database
+            trash_data = Trashdata.objects.all().order_by('timestamp')
+            if not trash_data:
+                return Response({"error": "No data found"}, status=status.HTTP_404_NOT_FOUND)
+
             # Serialize the data
-            serializer = TrashDataSerializer(trash_data,many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            return Response({"error": "No data found"}, status=status.HTTP_404_NOT_FOUND)
-    
+            
+            serializer = TrashDataSerializer(trash_data, many=True)
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
 @api_view(['POST'])

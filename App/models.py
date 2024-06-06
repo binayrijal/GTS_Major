@@ -103,6 +103,7 @@ class Event(models.Model):
 class Trashdata(models.Model):
     location=models.CharField(max_length=150)
     trash=models.IntegerField(default=0)
+    timestamp = models.DateField(auto_now_add=True)
     
     
 class Notification(models.Model):

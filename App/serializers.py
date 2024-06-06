@@ -155,7 +155,7 @@ class EventSerializer(serializers.ModelSerializer):
 class TrashDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = Trashdata
-        fields = ['location', 'trash']
+        fields = ['location', 'trash','timestamp']
         
     def to_representation(self, instance):
         representation = super().to_representation(instance)

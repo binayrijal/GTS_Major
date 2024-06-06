@@ -14,4 +14,5 @@ urlpatterns = [
     path('generate-pdf/',views.GeneratePDFAPIView.as_view(), name='generate_pdf'),
     path('trashdata/', views.TrashDataView.as_view(), name='trash-data'),
     path('update-location/', views.update_location, name='update_location'),
+    path('trashdata/graph/', views.TrashDataGraphView.as_view(), name='trashdata-graph'), 
 ]
