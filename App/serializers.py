@@ -5,7 +5,7 @@ from django.utils.http import urlsafe_base64_encode,urlsafe_base64_decode
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.html import escape
 from .utils import Util
-from .models import Event,Trashdata
+from .models import Event,Trashdata,FeedBack
 
 
 User=get_user_model()
@@ -13,13 +13,13 @@ User=get_user_model()
 
 
 class RegisterModelSerializer(serializers.ModelSerializer):
-    password2=serializers.CharField(style={'input_type':'password'},write_only=True)
-    role = serializers.CharField(write_only=True, required=False)
+    password2=serializers.CharField()
     class Meta:
         model= User
-        fields=['email','name','role','password','password2','mobile_number','citizenship','latitude','longitude']
+        fields=['email','full_name','role','password','password2','mobile_number','citizenship','latitude','longitude']
         extra_kwargs={
             'password':{'write_only':True},
+            'password2':{'write_only':True}
         }
 
 
@@ -66,7 +66,7 @@ class LoginModelSerializer(serializers.ModelSerializer):
 class ProfileModelSerializer(serializers.ModelSerializer):
     class Meta:
         model= User
-        fields=['id','email','name','latitude','longitude','mobile_number','role']
+        fields=['id','email','full_name','latitude','longitude','mobile_number','role','citizenship']
         
 class PasswordChangeSerializer(serializers.Serializer):
     password=serializers.CharField(max_length=255,style={'input_type':'password'},write_only=True)
@@ -178,3 +178,27 @@ class LocationSerializer(serializers.Serializer):
         if not -180 <= value <= 180:
             raise serializers.ValidationError("Longitude must be between -180 and 180")
         return value
+    
+
+
+class FeedBackSerializer(serializers.Serializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    feedback_msg = serializers.CharField(max_length=200)
+    rating = serializers.IntegerField(min_value=1, max_value=5)
+    name=serializers.ReadOnlyField(source='user.full_name')
+    
+    class Meta:
+        model = FeedBack
+        fields = ['user', 'feedback_msg', 'rating','full_name']
+        read_only_fields = ['user', 'full_name']
+
+    def create(self, validated_data):
+        return FeedBack.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        instance.feedback_msg = validated_data.get('feedback_msg', instance.feedback_msg)
+        instance.rating = validated_data.get('rating', instance.rating)
+        instance.save()
+        return instance
+        
+    

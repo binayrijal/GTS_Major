@@ -2,14 +2,14 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
 
 class UserManager(BaseUserManager):
-    def create_user(self, email, name, citizenship=None, role=None, latitude=None, longitude=None, mobile_number=None, password=None, **extra_fields):
+    def create_user(self, email, full_name, citizenship=None, role=None, latitude=None, longitude=None, mobile_number=None, password=None, **extra_fields):
         """
         Creates and saves a User with the given email, name, citizenship, role, latitude, longitude, mobile number, and password.
         """
         if not email:
             raise ValueError("Users must have an email address")
         
-        if not name:
+        if not full_name:
             raise ValueError("Users must have a name")
 
         email = self.normalize_email(email)
@@ -19,7 +19,7 @@ class UserManager(BaseUserManager):
             
         user = self.model(
             email=email,
-            name=name,
+            full_name=full_name,
             citizenship=citizenship,
             role=role,
             latitude=latitude,
@@ -31,7 +31,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, name, password=None,mobile_number=None, **extra_fields):
+    def create_superuser(self, email, full_name, password=None,mobile_number=None, **extra_fields):
         """
         Creates and saves a superuser with the given email, name, and password.
         """
@@ -45,7 +45,7 @@ class UserManager(BaseUserManager):
 
         return self.create_user(
             email,
-            name,
+            full_name,
             password=password,
             role='Officer',
             mobile_number=mobile_number,
@@ -58,9 +58,9 @@ class User(AbstractBaseUser):
         max_length=255,
         unique=True,
     )
-    name = models.CharField(max_length=200)
+    full_name = models.CharField(max_length=200)
     role = models.CharField(max_length=200)
-    citizenship = models.CharField(max_length=10, blank=True, null=True)
+    citizenship = models.CharField(max_length=20, blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
     mobile_number = models.CharField(max_length=13, blank=True, null=True)
@@ -73,7 +73,7 @@ class User(AbstractBaseUser):
     objects = UserManager()
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["name"]
+    REQUIRED_FIELDS = ["full_name"]
 
     def __str__(self):
         return self.email
@@ -111,4 +111,10 @@ class Notification(models.Model):
     sent_at = models.DateTimeField(auto_now_add=True)
     lati = models.FloatField()
     longi = models.FloatField()
+    
+class FeedBack(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    feedback_msg=models.TextField()
+    rating=models.IntegerField()
+    
     

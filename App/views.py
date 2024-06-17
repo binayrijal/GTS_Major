@@ -7,12 +7,12 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegisterModelSerializer,LoginModelSerializer,ProfileModelSerializer,PasswordChangeSerializer,SendMailPasswordResetSerializer,DoPasswordResetSerializer,EventSerializer,TrashDataSerializer,LocationSerializer
+from .serializers import RegisterModelSerializer,LoginModelSerializer,ProfileModelSerializer,PasswordChangeSerializer,SendMailPasswordResetSerializer,DoPasswordResetSerializer,EventSerializer,TrashDataSerializer,LocationSerializer,FeedBackSerializer
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from .renderer import UserRenderer
-from .models import Event,Trashdata,Notification
+from .models import Event,Trashdata,Notification,FeedBack
 from rest_framework import viewsets, permissions
 from rest_framework.permissions import IsAdminUser, SAFE_METHODS
 from django.http import HttpResponse
@@ -32,6 +32,7 @@ from django.conf import settings
 import json
 from matplotlib.ticker import MaxNLocator
 from matplotlib.dates import DateFormatter
+from rest_framework import generics, permissions
 
 User=get_user_model()
 
@@ -121,13 +122,16 @@ class IsAdminOrReadOnly(permissions.BasePermission):
 
     def has_permission(self, request, view):
         # Allow read-only permissions to authenticated users
-        if request.user.is_authenticated:
-            return request.method in permissions.SAFE_METHODS
-        return False
+        if request.method in permissions.SAFE_METHODS:
+          return True
+        
+        return request.user and request.user.is_staff
 
     def has_object_permission(self, request, view, obj):
         # Allow write permissions only to admin users
-        return request.user.is_staff
+        if request.method in permissions.SAFE_METHODS:
+             return True
+        return  request.user and request.user.is_staff
 
 class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all()
@@ -199,7 +203,7 @@ class GeneratePDFAPIView(APIView):
         response['Content-Disposition'] = 'attachment; filename="schedule_report.pdf"'
         return response
     
-
+#not use right now
 def firebaseData(request):
     # Create a Firebase Realtime Database reference
     database = initialize_firebase() 
@@ -213,7 +217,7 @@ def firebaseData(request):
     serializer = TrashDataSerializer(trash_data)
     
     return Response(serializer.data)
-
+#this is for data save from front end to backend
 class TrashDataView(APIView):
     def post(self, request, *args, **kwargs):
         try:
@@ -240,48 +244,6 @@ class TrashDataView(APIView):
 #generate graph for trash data
 class TrashDataGraphView(APIView):
     def get(self, request, *args, **kwargs):
-        # try:
-        #     # Retrieve all trash data from the database
-        #     trash_data = Trashdata.objects.all().order_by('timestamp')
-        #     if not trash_data:
-        #         return Response({"error": "No data found"}, status=status.HTTP_404_NOT_FOUND)
-
-        #     # Serialize the data
-        #     serializer = TrashDataSerializer(trash_data, many=True)
-        #     data = serializer.data
-
-        #     # Extract timestamps and values
-        #     timestamps = [item['timestamp'] for item in data]
-        #     values = [item['trash'] for item in data]
-
-        #     # Generate the graph
-        #     fig, ax = plt.subplots()
-        #     ax.plot(timestamps, values, label='Trash Data')
-        #     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-        #     plt.xlabel('Time')
-        #     plt.ylabel('Trash Data')
-        #     plt.title('Trash Data Over Time')
-
-        #     # Highlight peaks
-        #     max_value = max(values)
-        #     peak_indices = [i for i, value in enumerate(values) if value == max_value]
-        #     for idx in peak_indices:
-        #         plt.plot(timestamps[idx], values[idx], 'ro')
-
-        #     # Format the x-axis to show date-time
-        #     ax.xaxis.set_major_formatter(DateFormatter('%m-%d'))
-        #     plt.gcf().autofmt_xdate()
-
-        #     # Save the plot to a BytesIO object
-        #     buf = io.BytesIO()
-        #     plt.savefig(buf, format='png')
-        #     plt.close(fig)
-        #     buf.seek(0)
-
-        #     # Return the graph as a response
-        #     return HttpResponse(buf, content_type='image/png')
-        # except Exception as e:
-        #     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         try:
             # Retrieve all trash data from the database
             trash_data = Trashdata.objects.all().order_by('timestamp')
@@ -302,6 +264,7 @@ def update_location(request):
     if request.data is None:
         return Response({'error': 'Request data is missing'}, status=400)
     serializer = LocationSerializer(data=request.data)
+    
     if serializer.is_valid():
         lati = serializer.validated_data['lati']
         longi = serializer.validated_data['longi']
@@ -327,4 +290,27 @@ def update_location(request):
         return Response({'status': 'success', 'notified_users': notified_users})
     else:
         return Response(serializer.errors, status=400) 
+    
+
+class FeedBackListCreateView(generics.ListCreateAPIView):
+    queryset = FeedBack.objects.all()
+    serializer_class = FeedBackSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_context(self):
+        # Pass the current user in the context to the serializer
+        context = super().get_serializer_context()
+        context['user'] = self.request.user
+        return context
+
+class FeedBackDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = FeedBack.objects.all()
+    serializer_class = FeedBackSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_context(self):
+        # Pass the current user in the context to the serializer
+        context = super().get_serializer_context()
+        context['user'] = self.request.user
+        return context
     

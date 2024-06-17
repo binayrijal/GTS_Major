@@ -2,7 +2,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin 
 from django.contrib.auth.forms import UserChangeForm, UserCreationForm
-from .models import User,Event,Trashdata,Notification
+from .models import User,Event,Trashdata,Notification,FeedBack
 from django import forms
 
 
@@ -36,23 +36,23 @@ class CustomUserChangeForm(UserChangeForm):
         
 # Register your models here.
 class UserModelAdmin(UserAdmin):
-    list_display = ('email', 'name', 'is_staff', 'is_superuser')
+    list_display = ('email', 'full_name', 'is_staff', 'is_superuser')
     list_filter = ('is_staff', 'is_superuser')
     add_form = CustomUserCreationForm
     form = CustomUserChangeForm
     fieldsets = (
         ('User Credentials', {'fields': ('email', 'password')}),
-        ('Personal info', {'fields': ('name', 'citizenship', 'role', 'latitude', 'longitude', 'mobile_number')}),
+        ('Personal info', {'fields': ('full_name', 'citizenship', 'role', 'latitude', 'longitude', 'mobile_number')}),
         ('Permissions', {'fields': ('is_staff', 'is_superuser', 'is_active')}),
         ('Important dates', {'fields': ('last_login',)}),
     )
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'name', 'password1', 'password2','mobile_number','latitude','longitude','citizenship'),
+            'fields': ('email', 'full_name', 'password1', 'password2','mobile_number','latitude','longitude','citizenship'),
         }),
     )
-    search_fields = ('email', 'name')
+    search_fields = ('email', 'full_name')
     ordering = ('email',)
     filter_horizontal = ()
 
@@ -77,4 +77,8 @@ class TrashAdmin(admin.ModelAdmin):
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'sent_at', 'lati', 'longi')
+    
+@admin.register(FeedBack)
+class FeedBackAdmin(admin.ModelAdmin):
+    list_display=('id','user','feedback_msg','rating')
     

@@ -15,4 +15,6 @@ urlpatterns = [
     path('trashdata/', views.TrashDataView.as_view(), name='trash-data'),
     path('update-location/', views.update_location, name='update_location'),
     path('trashdata/graph/', views.TrashDataGraphView.as_view(), name='trashdata-graph'), 
+    path('feedback/', views.FeedBackListCreateView.as_view(), name='feedback-list-create'),
+    path('feedback/<int:pk>/', views.FeedBackDetailView.as_view(), name='feedback-detail'),
 ]
