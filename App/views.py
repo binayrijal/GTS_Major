@@ -33,14 +33,19 @@ import json
 from matplotlib.ticker import MaxNLocator
 from matplotlib.dates import DateFormatter
 from rest_framework import generics, permissions
+from rest_framework.pagination import PageNumberPagination
+
 
 User=get_user_model()
 
 
 
 
-
-
+## this for paginaton
+class CustomPageNumberPagination(PageNumberPagination):
+    page_size = 2 # Set the default page size
+    page_size_query_param = 'page_size'
+    max_page_size = 10  # Set the maximum page size limit
 
 
 #generate token manually
@@ -84,6 +89,14 @@ class ProfileModelView(APIView):
     def get(self,request,format=None):
         serializer=ProfileModelSerializer(request.user)
         return Response(serializer.data,status=status.HTTP_202_ACCEPTED)
+    
+    def put(self, request, *args, **kwargs):
+        user = self.request.user
+        serializer = ProfileModelSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class PasswordChangeView(APIView):
     renderer_classes=[UserRenderer]
@@ -137,6 +150,7 @@ class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
     permission_classes = [IsAdminOrReadOnly]
+    pagination_class = CustomPageNumberPagination
 
     def get_permissions(self):
         """

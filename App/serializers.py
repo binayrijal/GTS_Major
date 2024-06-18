@@ -68,6 +68,17 @@ class ProfileModelSerializer(serializers.ModelSerializer):
         model= User
         fields=['id','email','full_name','latitude','longitude','mobile_number','role','citizenship']
         
+    def update(self, instance, validated_data):
+        instance.full_name = validated_data.get('full_name', instance.full_name)
+        instance.email = validated_data.get('email', instance.email)
+        instance.citizenship = validated_data.get('citizenship', instance.citizenship)
+        instance.mobile_number = validated_data.get('mobile_number', instance.mobile_number)
+        instance.latitude = validated_data.get('latitude', instance.latitude)
+        instance.longitude = validated_data.get('longitude', instance.longitude)
+        instance.role = validated_data.get('role', instance.role)
+        instance.save()
+        return instance
+        
 class PasswordChangeSerializer(serializers.Serializer):
     password=serializers.CharField(max_length=255,style={'input_type':'password'},write_only=True)
     password2=serializers.CharField(max_length=255,style={'input_type':'password'},write_only=True)
