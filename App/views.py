@@ -43,7 +43,7 @@ User=get_user_model()
 
 ## this for paginaton
 class CustomPageNumberPagination(PageNumberPagination):
-    page_size = 2 # Set the default page size
+    page_size = 1 # Set the default page size
     page_size_query_param = 'page_size'
     max_page_size = 10  # Set the maximum page size limit
 
