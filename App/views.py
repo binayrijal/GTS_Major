@@ -34,6 +34,10 @@ from matplotlib.ticker import MaxNLocator
 from matplotlib.dates import DateFormatter
 from rest_framework import generics, permissions
 from rest_framework.pagination import PageNumberPagination
+import requests
+import json
+import uuid
+from django.shortcuts import redirect
 
 
 User=get_user_model()
@@ -57,7 +61,9 @@ def get_tokens_for_user(user):
         'access': str(refresh.access_token),
     }
 
-
+def home(request):
+    uid=uuid.uuid4()
+    return render(request,'admin/payment.html',{'uid':uid})
 
 # Create your views here.
 class RegisterModelView(APIView):
@@ -326,5 +332,42 @@ class FeedBackDetailView(generics.RetrieveUpdateDestroyAPIView):
         # Pass the current user in the context to the serializer
         context = super().get_serializer_context()
         context['user'] = self.request.user
+   
         return context
     
+    
+    
+def initiatekhalti(request):
+    url = "https://a.khalti.com/api/v2/epayment/initiate/"
+    if request.method == "POST":
+        return_url=request.POST.get('return_url')
+        amount=request.POST.get('amount')
+        purchase_order_id=request.POST.get('purchase_order_id')
+    payload = json.dumps({
+        "return_url": return_url,
+        "website_url": "http://localhost:3000/",
+        "amount": amount,
+        "purchase_order_id": purchase_order_id,
+        "purchase_order_name": "test",
+        "customer_info": {
+        "name": "binaya" ,
+        "email":"binaya@gmail.com",
+        "phone":"9800000000"
+        }
+    })
+    headers = {
+        'Authorization': 'key aabb849e8da844beab016d3b34e90e36',
+        'Content-Type': 'application/json',
+    } 
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+
+   
+    new_dir=json.loads(response.text)
+    print(new_dir)
+    return redirect(new_dir['payment_url'])
+    # return render(request,'admin/hello.html')
+
+
+def verifykhalit(request):
+    return HttpResponse('hello')

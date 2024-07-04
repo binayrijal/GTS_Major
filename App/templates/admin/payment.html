@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Khalti Payment Integration</title>
+   
+</head>
+<body>
+   <h1>Simple Khalti Payment Integration</h1>
+   <form action="{% url 'initiate' %}" method="POST">
+    
+    {% csrf_token %}
+    <input type="hidden"  name="purchase_order_id" value="{{uid}}"  >
+    <input type="hidden" name="return_url" value="http://127.0.0.1:8000/api/verifykhalti">
+    <input type="hidden" name="amount" placeholder="Enter Amount" value="1000" >
+    <input type="submit" value="Pay with Khalti"></input>
+
+    </form>
+    
+
+    
+</body>
+</html>

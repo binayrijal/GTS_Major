@@ -3,6 +3,7 @@ from . import views
 
 
 urlpatterns = [
+    path('home/',views.home,name='home'),
     path('register_user/',views.RegisterModelView.as_view(),name='register_user'),
     path('login_user/',views.LoginModelView.as_view(),name='login_user'),
     path('profile/',views.ProfileModelView.as_view(),name='profile'),
@@ -17,4 +18,6 @@ urlpatterns = [
     path('trashdata/graph/', views.TrashDataGraphView.as_view(), name='trashdata-graph'), 
     path('feedback/', views.FeedBackListCreateView.as_view(), name='feedback-list-create'),
     path('feedback/<int:pk>/', views.FeedBackDetailView.as_view(), name='feedback-detail'),
+    path('initiate/',views.initiatekhalti,name='initiate'),
+    path('verifykhalti',views.verifykhalit,name='verifykhalti')
 ]
