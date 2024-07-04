@@ -19,5 +19,7 @@ urlpatterns = [
     path('feedback/', views.FeedBackListCreateView.as_view(), name='feedback-list-create'),
     path('feedback/<int:pk>/', views.FeedBackDetailView.as_view(), name='feedback-detail'),
     path('initiate/',views.initiatekhalti,name='initiate'),
-    path('verifykhalti/',views.verifykhalti,name='verifykhalti')
+    path('verifykhalti/',views.verifykhalti,name='verifykhalti'),
+    path('send_email_to_all_users/',views.send_email_to_all_users,name='send_email_to_all_users')
+    
 ]

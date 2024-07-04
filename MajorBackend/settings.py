@@ -184,8 +184,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER ='binay.191509@ncit.edu.np'
-EMAIL_HOST_PASSWORD ='9824406793@abC' 
+EMAIL_HOST_USER =''
+EMAIL_HOST_PASSWORD ='' 
 
 
 CORS_ALLOWED_ORIGINS = [

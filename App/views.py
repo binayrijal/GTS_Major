@@ -310,7 +310,25 @@ def update_location(request):
         return Response({'status': 'success', 'notified_users': notified_users})
     else:
         return Response(serializer.errors, status=400) 
-    
+ 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def send_email_to_all_users(request):
+    if request.method == 'POST':
+        subject = 'Your Subject'
+        message = 'Your message here'
+        from_email = settings.EMAIL_HOST_USER
+        recipient_list=[]
+        user=request.user
+        if user.role=="staff":
+            recipient_list = [users.email for users in User.objects.filter(role="User")]
+            
+
+        send_mail(subject, message, from_email, recipient_list)
+
+        return Response({'status': 'success'})
+
+    return Response({'status': 'failed,could not be done in get method'}, status=400)   
 
 class FeedBackListCreateView(generics.ListCreateAPIView):
     queryset = FeedBack.objects.all()
@@ -343,25 +361,26 @@ def initiatekhalti(request):
         return_url=request.POST.get('return_url')
         amount=request.POST.get('amount')
         purchase_order_id=request.POST.get('purchase_order_id')
-    payload = json.dumps({
-        "return_url": return_url,
-        "website_url": "http://localhost:3000/",
-        "amount": amount,
-        "purchase_order_id": purchase_order_id,
-        "purchase_order_name": "test",
-        "customer_info": {
-        "name": "binaya" ,
-        "email":"binaya@gmail.com",
-        "phone":"9800000000"
-        }
-    })
+        payload = json.dumps({
+            "return_url": return_url,
+            "website_url": "http://localhost:3000/",
+            "amount": amount,
+            "purchase_order_id": purchase_order_id,
+            "purchase_order_name": "test",
+            "customer_info": {
+            "name": "binay" ,
+            "email":"binayrijal22@gmail.com",
+            "phone":"9876543210"
+            }
+        })
+        
     headers = {
         'Authorization': 'key aabb849e8da844beab016d3b34e90e36',
         'Content-Type': 'application/json',
     } 
 
     response = requests.request("POST", url, headers=headers, data=payload)
-
+    
    
     new_dic=json.loads(response.text)
     print(new_dic)
@@ -369,4 +388,18 @@ def initiatekhalti(request):
 
 
 def verifykhalti(request):
-   pass
+   url=url = "https://a.khalti.com/api/v2/epayment/lookup/"
+   pidx=request.GET.get('pidx')
+   headers ={
+       'Authorization': 'key aabb849e8da844beab016d3b34e90e36',
+       'Content-Type': 'application/json',
+   }
+   payload=json.dumps({
+       "pidx": pidx
+   })
+   response = requests.request("POST", url, headers=headers, data=payload)
+    
+   
+   new_dic=json.loads(response.text)
+   print(new_dic)
+   return render(request,'admin/hello.html')
