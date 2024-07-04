@@ -363,11 +363,10 @@ def initiatekhalti(request):
     response = requests.request("POST", url, headers=headers, data=payload)
 
    
-    new_dir=json.loads(response.text)
-    print(new_dir)
-    return redirect(new_dir['payment_url'])
-    # return render(request,'admin/hello.html')
+    new_dic=json.loads(response.text)
+    print(new_dic)
+    return redirect(new_dic['payment_url'])
 
 
-def verifykhalit(request):
-    return HttpResponse('hello')
+def verifykhalti(request):
+   pass

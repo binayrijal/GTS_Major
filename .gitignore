@@ -12,6 +12,7 @@ env/
 *.db.sqlite3
 */migrations/
 
+
 # Static and media files
 /static/
 /media/
@@ -22,6 +23,7 @@ env/
 
 # Ignore virtual environment
 myenv_3.11.3/
+/__pycache__
 
 /firebase_credentials.json
 firebase_credentials/

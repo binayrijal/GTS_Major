@@ -11,9 +11,9 @@
     
     {% csrf_token %}
     <input type="hidden"  name="purchase_order_id" value="{{uid}}"  >
-    <input type="hidden" name="return_url" value="http://127.0.0.1:8000/api/verifykhalti">
-    <input type="hidden" name="amount" placeholder="Enter Amount" value="1000" >
-    <input type="submit" value="Pay with Khalti"></input>
+    <input type="hidden"  name="return_url" value="http://127.0.0.1:8000/api/verifykhalti/">
+    <input type="hidden"  name="amount" placeholder="Enter Amount" value="1000" >
+    <input type="submit"  value="Pay with Khalti">
 
     </form>
     
