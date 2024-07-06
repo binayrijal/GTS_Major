@@ -46,6 +46,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from datetime import timedelta
 from django.core import serializers
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
 User=get_user_model()
 
@@ -78,6 +79,23 @@ class RegisterModelView(APIView):
             serializer.save()
             return Response({'msg':'Registration successfull'},status=status.HTTP_201_CREATED)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def confirm_registration(request, token):
+    try:
+        # Decode the token and get the user
+        uid = urlsafe_base64_decode(token).decode()
+        user = User.objects.get(pk=uid)
+        
+        if user is not None:
+            user.is_active = True
+            user.save()
+            return Response({'msg':'user is done'})
+        else:
+            return Response({'msg':'user is not exist'})
+
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        return Response({'msg':'expect part error'})
         
         
 class LoginModelView(APIView):

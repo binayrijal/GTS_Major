@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     
     path('register_user/',views.RegisterModelView.as_view(),name='register_user'),
+    path('confirm-registration/<str:token>/', views.confirm_registration, name='confirm_registration'),
     path('login_user/',views.LoginModelView.as_view(),name='login_user'),
     path('profile/',views.ProfileModelView.as_view(),name='profile'),
     path('changepassword/',views.PasswordChangeView.as_view(),name='changepassword'),
@@ -23,6 +24,7 @@ urlpatterns = [
     path('send_email_to_all_users/',views.send_email_to_all_users,name='send_email_to_all_users'),
     path('initiate-payment/', views.initiate_payment, name='initiate_payment'),
     path('verify_payment/',views.verify_payment,name='verify_payment'),
-    path('Verified/',views.Verified,name="Verified")
+    path('Verified/',views.Verified,name="Verified"),
+    
     
 ]

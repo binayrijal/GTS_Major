@@ -1,6 +1,15 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
 import uuid
+from django.contrib.auth.models import BaseUserManager
+from django.utils.crypto import get_random_string
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.contrib.sites.models import Site
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.urls import reverse
+from django.conf import settings
 
 
 class UserManager(BaseUserManager):
@@ -31,6 +40,9 @@ class UserManager(BaseUserManager):
         )
         user.set_password(password)
         user.save(using=self._db)
+        
+        # Generate and send confirmation email
+        user.send_confirmation_email()
         return user
 
     def create_superuser(self, email, full_name, password=None,mobile_number=None, **extra_fields):
@@ -66,7 +78,7 @@ class User(AbstractBaseUser):
     longitude = models.FloatField(blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
     mobile_number = models.CharField(max_length=13, blank=True, null=True)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
@@ -89,7 +101,21 @@ class User(AbstractBaseUser):
         return self.is_superuser
 
 
+    def send_confirmation_email(self):
+            current_site = Site.objects.get_current()
+            domain = current_site.domain
+            token = self.generate_token()
 
+            subject = 'Confirm Your Registration'
+            message = render_to_string('admin/confirmation_email.html', {
+                'user': self,
+                'domain': domain,
+                'token': token,
+            })
+            send_mail(subject, message, settings.EMAIL_HOST_USER, [self.email])
+
+    def generate_token(self):
+            return get_random_string(length=32)
 
 
 class Event(models.Model):

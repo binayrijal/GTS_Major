@@ -29,8 +29,22 @@ class RegisterModelSerializer(serializers.ModelSerializer):
         if password != password2:
            raise serializers.ValidationError('password and password2  need to match') 
        
+        citizenship = attrs.get('citizenship')
+        mobile_number = attrs.get('mobile_number')
+        if citizenship and User.objects.filter(citizenship=citizenship).exists():
+           
+             raise serializers.ValidationError('citizenship already exist') 
+        if mobile_number and User.objects.filter(mobile_number=mobile_number).exists():
+            
+             raise serializers.ValidationError('mobile_number already exist ')
+        if mobile_number and len(mobile_number)!=10:
+            raise serializers.ValidationError('mobile_number must be 10 digit')
+        if citizenship and len(citizenship)!=16:
+            raise serializers.ValidationError('citizenship must be 16 digit')
+            
         
         return attrs
+      
     
     def create(self, validated_data):
         role = validated_data.pop('role', 'User')  # Get role from validated_data, default to 'User' if not provided
