@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
+import uuid
+
 
 class UserManager(BaseUserManager):
     def create_user(self, email, full_name, citizenship=None, role=None, latitude=None, longitude=None, mobile_number=None, password=None, **extra_fields):
@@ -116,5 +118,34 @@ class FeedBack(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     feedback_msg=models.TextField()
     rating=models.IntegerField()
+    
+
+
+
+class Payment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    is_verified=models.BooleanField(default=False)
+    
+class Transaction(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    transaction_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    transaction_uuid = models.CharField(max_length=100, unique=True)
+    product_code = models.CharField(max_length=100)
+    product_service_charge = models.DecimalField(max_digits=10, decimal_places=2, null=True)
+    product_delivery_charge = models.DecimalField(max_digits=10, decimal_places=2, null=True)
+    success_url = models.URLField()
+    failure_url = models.URLField()
+    signed_field_names = models.CharField(max_length=255)
+    signature = models.CharField(max_length=255)
+    ref_id = models.CharField(max_length=100, null=True, blank=True)  # Reference ID from eSewa
+    status = models.CharField(max_length=20, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Transaction {self.transaction_id} - {self.status}"
     
     

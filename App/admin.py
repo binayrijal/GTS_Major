@@ -2,7 +2,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin 
 from django.contrib.auth.forms import UserChangeForm, UserCreationForm
-from .models import User,Event,Trashdata,Notification,FeedBack
+from .models import User,Event,Trashdata,Notification,FeedBack,Transaction
 from django import forms
 from django.urls import path
 from django.template.response import TemplateResponse
@@ -171,3 +171,8 @@ class NotificationAdmin(admin.ModelAdmin):
 @admin.register(FeedBack, site=admin_site)
 class FeedBackAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'feedback_msg', 'rating')
+    
+@admin.register(Transaction, site=admin_site)
+class TransactionAdmin(admin.ModelAdmin):
+    list_display = [field.name for field in Transaction._meta.fields]
+    

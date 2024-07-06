@@ -1,0 +1,24 @@
+<!-- payment_form.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eSewa Payment</title>
+</head>
+<body>
+    <form action="https://uat.esewa.com.np/epay/main" method="POST">
+        <input type="hidden" name="amt" value="{{ amount }}" required />
+        <input type="hidden" name="txAmt" value="{{ tax_amount }}" required />
+        <input type="hidden" name="tAmt" value="{{ total_amount }}" required />
+        <input type="hidden" name="psc" value="0" required />
+        <input type="hidden" name="pdc" value="0" required />
+        <input type="hidden" name="scd" value="{{ product_code }}" required />
+        <input type="hidden" name="pid" value="{{ transaction_uuid }}" required />
+        <input type="hidden" name="su" value="{{ success_url }}" required />
+        <input type="hidden" name="fu" value="{{ failure_url }}" required />
+        <input type="hidden" name="signature" value="{{ signature }}" required />
+        <button type="submit">Pay with eSewa</button>
+    </form>
+</body>
+</html>

@@ -3,7 +3,7 @@ from . import views
 
 
 urlpatterns = [
-    path('home/',views.home,name='home'),
+    
     path('register_user/',views.RegisterModelView.as_view(),name='register_user'),
     path('login_user/',views.LoginModelView.as_view(),name='login_user'),
     path('profile/',views.ProfileModelView.as_view(),name='profile'),
@@ -20,6 +20,9 @@ urlpatterns = [
     path('feedback/<int:pk>/', views.FeedBackDetailView.as_view(), name='feedback-detail'),
     path('initiate/',views.initiatekhalti,name='initiate'),
     path('verifykhalti/',views.verifykhalti,name='verifykhalti'),
-    path('send_email_to_all_users/',views.send_email_to_all_users,name='send_email_to_all_users')
+    path('send_email_to_all_users/',views.send_email_to_all_users,name='send_email_to_all_users'),
+    path('initiate-payment/', views.initiate_payment, name='initiate_payment'),
+    path('verify_payment/',views.verify_payment,name='verify_payment'),
+    path('Verified/',views.Verified,name="Verified")
     
 ]

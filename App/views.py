@@ -3,7 +3,7 @@ import matplotlib
 matplotlib.use('agg')  # Set the backend to 'agg' before importing pyplot
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from django.shortcuts import render
+from django.shortcuts import render,redirect
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -12,7 +12,7 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from .renderer import UserRenderer
-from .models import Event,Trashdata,Notification,FeedBack
+from .models import Event,Trashdata,Notification,FeedBack,Transaction
 from rest_framework import viewsets, permissions
 from rest_framework.permissions import IsAdminUser, SAFE_METHODS
 from django.http import HttpResponse
@@ -29,16 +29,23 @@ from django.utils import timezone
 from geopy.distance import geodesic
 from django.contrib.auth import get_user_model
 from django.conf import settings
-import json
 from matplotlib.ticker import MaxNLocator
 from matplotlib.dates import DateFormatter
 from rest_framework import generics, permissions
 from rest_framework.pagination import PageNumberPagination
 import requests
 import json
+from .utils import generate_signature
 import uuid
-from django.shortcuts import redirect
-
+import hmac
+import hashlib
+import base64
+from decimal import Decimal
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from django.utils import timezone
+from datetime import timedelta
+from django.core import serializers
 
 User=get_user_model()
 
@@ -61,9 +68,6 @@ def get_tokens_for_user(user):
         'access': str(refresh.access_token),
     }
 
-def home(request):
-    uid=uuid.uuid4()
-    return render(request,'admin/payment.html',{'uid':uid})
 
 # Create your views here.
 class RegisterModelView(APIView):
@@ -103,6 +107,22 @@ class ProfileModelView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def Verified(request):
+    user=request.user
+    valid_user=Transaction.objects.filter(user=user)
+    if valid_user.exists():  # Check if user has any transactions
+        try:
+            last_payment = Transaction.objects.filter(user=user, created_at__gte=timezone.now() - timedelta(days=30)).latest('created_at')
+            last_payment_dict = serializers.serialize('python', [last_payment])[0]['fields']
+            return JsonResponse({"msg": "you are verified user", "last_payment": last_payment_dict})
+        except Transaction.DoesNotExist:
+            return JsonResponse({'msg': 'No transactions found within the last 30 days.'})
+    else:
+        return JsonResponse({'msg': 'Not a valid user.'})
+    
 
 class PasswordChangeView(APIView):
     renderer_classes=[UserRenderer]
@@ -237,6 +257,9 @@ def firebaseData(request):
     serializer = TrashDataSerializer(trash_data)
     
     return Response(serializer.data)
+
+
+
 #this is for data save from front end to backend
 class TrashDataView(APIView):
     def post(self, request, *args, **kwargs):
@@ -369,13 +392,13 @@ def initiatekhalti(request):
             "purchase_order_name": "test",
             "customer_info": {
             "name": "binay" ,
-            "email":"binayrijal22@gmail.com",
+            "email":"binay.rijal@ankaek.com",
             "phone":"9876543210"
             }
         })
         
     headers = {
-        'Authorization': 'key aabb849e8da844beab016d3b34e90e36',
+        'Authorization': 'key 3099b3a4f91743bfa82dd82b0e3fbbe5',
         'Content-Type': 'application/json',
     } 
 
@@ -403,3 +426,164 @@ def verifykhalti(request):
    new_dic=json.loads(response.text)
    print(new_dic)
    return render(request,'admin/hello.html')
+
+# def esewa_payment(request):
+#     if request.method == 'POST':
+#         secret_key = '8gBm/:&EnhH.1/q'  # Replace with your eSewa secret key
+
+#         data = {
+#             'amount': request.POST.get('amount'),
+#             'tax_amount': request.POST.get('tax_amount'),
+#             'total_amount': request.POST.get('total_amount'),
+#             'transaction_uuid': str(uuid.uuid4()),  # Generate a unique transaction ID
+#             'product_code': request.POST.get('product_code'),
+#             'product_service_charge': request.POST.get('product_service_charge'),
+#             'product_delivery_charge': request.POST.get('product_delivery_charge'),
+#             'success_url': request.POST.get('success_url'),
+#             'failure_url': request.POST.get('failure_url'),
+#             'signed_field_names': request.POST.get('signed_field_names'),
+#         }
+#         signdata={
+#              'total_amount':request.POST.get('tax_amount'),
+#              'transaction_uuid':str(uuid.uuid4()),
+#              'product_code':request.POST.get('product_code'),
+#          }
+#         # Generate signature
+#         data['signature'] = generate_signature(signdata, secret_key)
+
+#         # Render form with hidden fields including the signature
+#         return render(request, 'admin/esewa_form.html', {'data': data})
+
+#     return render(request, 'admin/esewa_payment.html')
+
+
+# views.py
+
+
+
+
+def initiate_payment(request):
+    # if request.method == 'POST':
+    #     amount = request.POST.get('amount')
+    #     tax_amount = float(amount) * 0.13  # Example tax calculation
+    #     total_amount = float(amount) + tax_amount
+    #     transaction_uuid = str(uuid.uuid4())
+    #     product_code = 'EPAYTEST'
+    #     success_url = 'http://localhost:8000/api/verify_payment/'
+    #     failure_url = 'http://localhost:8000/api/initiate-payment/'
+
+    #     # Create the message to be signed
+    #     message = f"total_amount={total_amount},transaction_uuid={transaction_uuid},product_code={product_code}"
+    #     merchant_key = '8gBm/:&EnhH.1/q'  # Ensure you have this in your settings
+
+    #     # Create the HMAC SHA256 signature
+    #     signature = hmac.new(
+    #         key=merchant_key.encode('utf-8'),
+    #         msg=message.encode('utf-8'),
+    #         digestmod=hashlib.sha256
+    #     ).digest()
+
+    #     signature_base64 = base64.b64encode(signature).decode()
+
+    #     context = {
+    #         'amount': amount,
+    #         'tax_amount': tax_amount,
+    #         'total_amount': total_amount,
+    #         'transaction_uuid': transaction_uuid,
+    #         'product_code': product_code,
+    #         'success_url': success_url,
+    #         'failure_url': failure_url,
+    #         'signature': signature_base64,
+    #     }
+        
+    #     return render(request, 'admin/payment_form.html', context)
+
+    # return render(request, 'admin/initiate_payment.html')
+    if request.method == 'POST':
+        amount = request.POST.get('amount')
+        tax_amount = Decimal(amount) * Decimal('0.13')  # Example tax calculation
+        total_amount = Decimal(amount) + tax_amount
+
+        # Create a new transaction record
+        transaction = Transaction.objects.create(
+            user=request.user,
+            amount=Decimal(amount),
+            tax_amount=tax_amount,
+            total_amount=total_amount,
+            transaction_uuid=str(uuid.uuid4()),
+            product_code='EPAYTEST',
+            success_url='http://127.0.0.1:8000/api/verify_payment/',
+            failure_url='http://127.0.0.1:8000/api/login_user/',
+            signed_field_names='total_amount,transaction_uuid,product_code'
+        )
+
+        # Generate the signature
+        message = f"total_amount={total_amount},transaction_uuid={transaction.transaction_uuid},product_code={transaction.product_code}"
+        merchant_key = "8gBm/:&EnhH.1/q"
+        signature = hmac.new(merchant_key.encode(), message.encode(), hashlib.sha256).digest()
+        signature_in_base64 = base64.b64encode(signature).decode()
+        transaction.signature = signature_in_base64
+        transaction.save()
+
+        context = {
+            'amount': amount,
+            'tax_amount': tax_amount,
+            'total_amount': total_amount,
+            'transaction_uuid': transaction.transaction_uuid,
+            'product_code': transaction.product_code,
+            'product_service_charge': transaction.product_service_charge,
+            'product_delivery_charge': transaction.product_delivery_charge,
+            'success_url': transaction.success_url,
+            'failure_url': transaction.failure_url,
+            'signed_field_names': transaction.signed_field_names,
+            'signature': transaction.signature,
+        }
+        return render(request, 'admin/payment_form.html', context)
+    return render(request, 'admin/initiate_payment.html')
+
+
+@api_view(['GET'])
+def verify_payment(request):
+    
+        oid = request.GET.get('oid')
+        amt = request.GET.get('amt')
+        ref_id = request.GET.get('refId')
+
+        # URL for eSewa transaction verification
+        verification_url = "https://uat.esewa.com.np/epay/transrec"
+
+        # Parameters for verification
+        params = {
+            'amt': amt,
+            'rid': ref_id,
+            'pid': oid,
+            'scd': 'EPAYTEST',
+        }
+
+        # Make a GET request to eSewa verification endpoint
+        response = requests.get(verification_url, params=params)
+
+        # Check response
+        if response.status_code == 200:
+            response_content = response.text
+            if "Success" in response_content:
+                # Update the transaction status to 'completed' in your database
+                update_transaction_status(oid, ref_id, 'completed')
+                return Response({'status': 'success', 'message': 'Payment verified successfully.'})
+            else:
+                return Response({'status': 'failure', 'message': 'Payment verification failed.'})
+        else:
+            return Response({'status': 'error', 'message': 'Error verifying payment.'})
+
+        return JsonResponse({'status': 'invalid_request', 'message': 'Invalid request method.'})
+
+def update_transaction_status(transaction_id, ref_id, status):
+    try:
+        transaction = Transaction.objects.get(transaction_uuid=transaction_id)
+        transaction.status = status
+        transaction.ref_id = ref_id
+        transaction.save()
+    except Transaction.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Transaction not found.'})
+    
+        
