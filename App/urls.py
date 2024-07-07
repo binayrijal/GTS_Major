@@ -5,7 +5,7 @@ from . import views
 urlpatterns = [
     
     path('register_user/',views.RegisterModelView.as_view(),name='register_user'),
-    path('confirm-registration/<str:token>/', views.confirm_registration, name='confirm_registration'),
+    path('confirm-registration/<str:uidb64>/<str:token>/', views.confirm_registration, name='confirm_registration'),
     path('login_user/',views.LoginModelView.as_view(),name='login_user'),
     path('profile/',views.ProfileModelView.as_view(),name='profile'),
     path('changepassword/',views.PasswordChangeView.as_view(),name='changepassword'),

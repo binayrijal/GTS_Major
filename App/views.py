@@ -47,6 +47,8 @@ from django.utils import timezone
 from datetime import timedelta
 from django.core import serializers
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from .tokens import account_activation_token
+from django.utils.encoding import force_str
 
 User=get_user_model()
 
@@ -77,25 +79,26 @@ class RegisterModelView(APIView):
         serializer=RegisterModelSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({'msg':'Registration successfull'},status=status.HTTP_201_CREATED)
+            return Response({'msg':'Registration successfull,please verify the link from mail you given'},status=status.HTTP_201_CREATED)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
+
 @api_view(['GET'])
-def confirm_registration(request, token):
+def confirm_registration(request, uidb64, token):
     try:
-        # Decode the token and get the user
-        uid = urlsafe_base64_decode(token).decode()
+        uid = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(pk=uid)
-        
-        if user is not None:
+
+        if user is not None and account_activation_token.check_token(user, token):
             user.is_active = True
             user.save()
-            return Response({'msg':'user is done'})
+            return render(request,'admin/hello.html')
         else:
-            return Response({'msg':'user is not exist'})
+            return Response({'msg': 'Activation link is invalid'}, status=status.HTTP_400_BAD_REQUEST)
 
-    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-        return Response({'msg':'expect part error'})
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist) as e:
+        print(f"Exception occurred: {e}")
+        return Response({'msg': 'Error confirming registration. Please try again.'}, status=status.HTTP_400_BAD_REQUEST)
         
         
 class LoginModelView(APIView):
@@ -109,6 +112,8 @@ class LoginModelView(APIView):
          if user is not None:
             token=get_tokens_for_user(user)
             return Response({'token':token,'msg':'login successfully'},status=status.HTTP_200_OK)
+         else:
+             return Response({'msg':'first verify your id from mail'},status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 class ProfileModelView(APIView):

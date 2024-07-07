@@ -7,9 +7,10 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.contrib.sites.models import Site
 from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
+from django.utils.encoding import force_bytes,force_str
 from django.urls import reverse
 from django.conf import settings
+from .tokens import account_activation_token
 
 
 class UserManager(BaseUserManager):
@@ -102,15 +103,18 @@ class User(AbstractBaseUser):
 
 
     def send_confirmation_email(self):
-            current_site = Site.objects.get_current()
-            domain = current_site.domain
-            token = self.generate_token()
+            domain = '127.0.0.1:8000'
+            uid = urlsafe_base64_encode(force_bytes(self.pk))
+            token = account_activation_token.make_token(self)
 
             subject = 'Confirm Your Registration'
-            message = render_to_string('admin/confirmation_email.html', {
+            confirmation_link = f'http://{domain}/api/confirm-registration/{uid}/{token}/'
+            message = render_to_string('admin/confirmation_email.html',{
                 'user': self,
                 'domain': domain,
+                'uid':uid,
                 'token': token,
+                'confirmation_link': confirmation_link,
             })
             send_mail(subject, message, settings.EMAIL_HOST_USER, [self.email])
 
